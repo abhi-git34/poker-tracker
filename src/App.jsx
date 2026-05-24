@@ -36,6 +36,8 @@ export default function App() {
   
   const [sbAmount, setSbAmount] = useState(1);
   const [bbAmount, setBbAmount] = useState(2);
+  const [sessionLocation, setSessionLocation] = useState('Home Game');
+  const [sessionGameType, setSessionGameType] = useState('NLH');
   
   const [modalSeatIdx, setModalSeatIdx] = useState(null);
   const [updateStackVal, setUpdateStackVal] = useState('');
@@ -85,6 +87,8 @@ export default function App() {
       id: Date.now(),
       startTime: new Date().toISOString(),
       endTime: null,
+      location: sessionLocation,
+      gameType: sessionGameType,
       sbAmount,
       bbAmount,
       dealerButtonSeat: 0,
@@ -324,6 +328,10 @@ export default function App() {
     let foldToCbetOpp = 0, foldToCbetCount = 0;
     let afBetsRaises = 0, afCalls = 0;
     let sawFlopCount = 0, wtsdCount = 0;
+    
+    // Financial Stats
+    let netProfit = 0;
+    let totalHours = 0;
 
     // Positional Stats
     let posHands = { Blinds: 0, Early: 0, Middle: 0, Late: 0 };
@@ -331,6 +339,14 @@ export default function App() {
     let posPfr = { Blinds: 0, Early: 0, Middle: 0, Late: 0 };
     
     targetSessions.forEach(s => {
+      const playerInSession = s.players.find(p => p.userId === userId);
+      if (playerInSession) {
+        netProfit += (playerInSession.stack - playerInSession.rebuys);
+        const start = new Date(s.startTime);
+        const end = s.endTime ? new Date(s.endTime) : new Date();
+        totalHours += (end - start) / (1000 * 60 * 60);
+      }
+
       const allHands = [...s.hands];
       if (s.currentHandActions && s.currentHandActions.length > 0) {
         allHands.push({ actions: s.currentHandActions, winnerId: null, wentToShowdown: false, dealerSeat: s.dealerButtonSeat });
@@ -416,6 +432,10 @@ export default function App() {
       cbet: cbetOpp ? Math.round((cbetCount / cbetOpp) * 100) : 0,
       foldToCbet: foldToCbetOpp ? Math.round((foldToCbetCount / foldToCbetOpp) * 100) : 0,
       
+      netProfit,
+      hourlyRate: totalHours > 0 ? Math.round(netProfit / totalHours) : 0,
+      totalHours: totalHours.toFixed(1),
+
       posVpip: {
         Early: calcPos(posVpip.Early, posHands.Early),
         Middle: calcPos(posVpip.Middle, posHands.Middle),
@@ -625,14 +645,27 @@ export default function App() {
 
       {viewMode === 'session' && !currentSession && (
         <section className="panel">
-          <h2>Start 9-Max Session</h2>
-          <div className="input-group">
-            <label>Small Blind ($)</label>
-            <input type="number" value={sbAmount} onChange={e => setSbAmount(parseFloat(e.target.value))} />
+          <h2 style={{marginBottom: '1rem'}}>Start 9-Max Session</h2>
+          <div className="input-group mb-1">
+            <label>Location</label>
+            <input type="text" value={sessionLocation} onChange={e => setSessionLocation(e.target.value)} />
           </div>
-          <div className="input-group mt-1 mb-2">
-            <label>Big Blind ($)</label>
-            <input type="number" value={bbAmount} onChange={e => setBbAmount(parseFloat(e.target.value))} />
+          <div className="input-group mb-1">
+            <label>Game Type</label>
+            <select value={sessionGameType} onChange={e => setSessionGameType(e.target.value)} style={{width: '100%', padding: '0.8rem', background: 'var(--bg-dark)', color: 'white', border: '1px solid var(--border)', borderRadius: '4px'}}>
+              <option value="NLH">No Limit Hold'em (NLH)</option>
+              <option value="PLO">Pot Limit Omaha (PLO)</option>
+            </select>
+          </div>
+          <div style={{display: 'flex', gap: '0.5rem'}}>
+            <div className="input-group" style={{flex: 1}}>
+              <label>Small Blind ($)</label>
+              <input type="number" value={sbAmount} onChange={e => setSbAmount(parseFloat(e.target.value))} />
+            </div>
+            <div className="input-group mb-2" style={{flex: 1}}>
+              <label>Big Blind ($)</label>
+              <input type="number" value={bbAmount} onChange={e => setBbAmount(parseFloat(e.target.value))} />
+            </div>
           </div>
           <button onClick={startSession} className="btn primary full-width mt-2">Start Session</button>
         </section>
@@ -760,12 +793,23 @@ export default function App() {
               
               <div className="stats-grid mt-2" style={{gridTemplateColumns: 'repeat(2, 1fr)'}}>
                 <div className="stat-card" style={{gridColumn: '1 / -1', background: 'var(--border)'}}>
-                  <div className="stat-label">LIFETIME WINS</div>
-                  <div className="stat-value" style={{color: 'white'}}>{stats.wins} <span style={{fontSize: '1rem', color: 'var(--success)'}}>({stats.showdownWins} at Showdown)</span></div>
+                  <div className="stat-label">NET PROFIT</div>
+                  <div className="stat-value" style={{color: stats.netProfit >= 0 ? 'var(--success)' : 'var(--danger)'}}>
+                    {stats.netProfit >= 0 ? '+' : '-'}${Math.abs(stats.netProfit)} 
+                    <span style={{fontSize: '1rem', color: 'var(--text-muted)'}}> (${stats.hourlyRate}/hr)</span>
+                  </div>
                 </div>
                 <div className="stat-card">
-                  <div className="stat-label">Win %</div>
+                  <div className="stat-label">Hours Played</div>
+                  <div className="stat-value">{stats.totalHours}h</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-label">Win Rate</div>
                   <div className="stat-value">{stats.winRate}%</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-label">Lifetime Wins</div>
+                  <div className="stat-value">{stats.wins}</div>
                 </div>
                 <div className="stat-card">
                   <div className="stat-label">Hands Played</div>
