@@ -18,6 +18,14 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 const NUM_SEATS = 9;
 const STREETS = ['PRE-FLOP', 'FLOP', 'TURN', 'RIVER'];
 
+const getPositionName = (seatIdx, dealerIdx) => {
+  const offset = (seatIdx - dealerIdx + NUM_SEATS) % NUM_SEATS;
+  if (offset === 1 || offset === 2) return 'Blinds';
+  if (offset === 0 || offset === 8) return 'Late';
+  if (offset >= 3 && offset <= 4) return 'Early';
+  return 'Middle';
+};
+
 export default function App() {
   const [sessions, setSessions] = useState([]);
   const [users, setUsers] = useState([]); 
@@ -300,14 +308,27 @@ export default function App() {
     let preflopHandsPlayed = 0;
     let wins = 0, showdownWins = 0, totalHandsInvolved = 0;
     
+    // Advanced Post-Flop Stats
+    let cbetOpp = 0, cbetCount = 0;
+    let foldToCbetOpp = 0, foldToCbetCount = 0;
+    let afBetsRaises = 0, afCalls = 0;
+    let sawFlopCount = 0, wtsdCount = 0;
+
+    // Positional Stats
+    let posHands = { Blinds: 0, Early: 0, Middle: 0, Late: 0 };
+    let posVpip = { Blinds: 0, Early: 0, Middle: 0, Late: 0 };
+    let posPfr = { Blinds: 0, Early: 0, Middle: 0, Late: 0 };
+    
     targetSessions.forEach(s => {
       const allHands = [...s.hands];
       if (s.currentHandActions && s.currentHandActions.length > 0) {
-        allHands.push({ actions: s.currentHandActions, winnerId: null, wentToShowdown: false });
+        allHands.push({ actions: s.currentHandActions, winnerId: null, wentToShowdown: false, dealerSeat: s.dealerButtonSeat });
       }
 
-      allHands.forEach(hand => {
+      allHands.forEach((hand, hIdx) => {
+        const dealerIdx = hand.dealerSeat !== undefined ? hand.dealerSeat : (0 + hIdx) % NUM_SEATS;
         const playerActions = hand.actions.filter(a => a.playerId === userId);
+        
         if (playerActions.length > 0) {
           totalHandsInvolved++;
           
@@ -316,9 +337,24 @@ export default function App() {
             if (hand.wentToShowdown) showdownWins++;
           }
 
+          // AF Calculation
+          playerActions.forEach(a => {
+            if (['raise', '3bet', '4bet'].includes(a.action)) afBetsRaises++;
+            if (a.action === 'call') afCalls++;
+          });
+
+          // Did player see flop?
+          const sawFlop = playerActions.some(a => a.street >= 1) || hand.wentToShowdown;
+          if (sawFlop) sawFlopCount++;
+          if (sawFlop && hand.wentToShowdown) wtsdCount++;
+
           const preflopActions = playerActions.filter(a => a.street === 0);
           if (preflopActions.length > 0) {
             preflopHandsPlayed++;
+            
+            const firstActionSeat = preflopActions[0].seat;
+            const pos = getPositionName(firstActionSeat, dealerIdx);
+            posHands[pos]++;
             
             const vpip = preflopActions.some(a => ['call', 'raise', '3bet', '4bet'].includes(a.action));
             const pfr = preflopActions.some(a => ['raise', '3bet', '4bet'].includes(a.action));
@@ -326,15 +362,33 @@ export default function App() {
             const faced3bFold = preflopActions.some(a => a.action === 'fold' && a.facing === '3bet');
             const faced3bCall = preflopActions.some(a => ['call','4bet'].includes(a.action) && a.facing === '3bet');
             
-            if (vpip) vpipCount++;
-            if (pfr) pfrCount++;
+            if (vpip) { vpipCount++; posVpip[pos]++; }
+            if (pfr) { pfrCount++; posPfr[pos]++; }
             if (threeBet) threeBetCount++;
             if (faced3bFold || faced3bCall) f3betOpp++;
             if (faced3bFold) f3betFold++;
+
+            // C-Bet Logic
+            const flopActions = playerActions.filter(a => a.street === 1);
+            if (pfr && flopActions.length > 0) {
+              cbetOpp++;
+              if (flopActions.some(a => ['raise'].includes(a.action))) cbetCount++;
+            }
+
+            // Fold to C-Bet Logic
+            if (vpip && !pfr && flopActions.length > 0) {
+              const facedBetOnFlop = flopActions.some(a => a.facing === 'raise');
+              if (facedBetOnFlop) {
+                foldToCbetOpp++;
+                if (flopActions.some(a => a.action === 'fold' && a.facing === 'raise')) foldToCbetCount++;
+              }
+            }
           }
         }
       });
     });
+
+    const calcPos = (val, opp) => opp ? Math.round((val / opp) * 100) : 0;
 
     return {
       totalHandsInvolved,
@@ -344,7 +398,25 @@ export default function App() {
       pfr: preflopHandsPlayed ? Math.round((pfrCount / preflopHandsPlayed) * 100) : 0,
       threeBet: preflopHandsPlayed ? Math.round((threeBetCount / preflopHandsPlayed) * 100) : 0,
       foldTo3Bet: f3betOpp ? Math.round((f3betFold / f3betOpp) * 100) : 0,
-      winRate: totalHandsInvolved ? Math.round((wins / totalHandsInvolved) * 100) : 0
+      winRate: totalHandsInvolved ? Math.round((wins / totalHandsInvolved) * 100) : 0,
+      
+      af: afCalls === 0 ? (afBetsRaises > 0 ? 'Inf' : 0) : (afBetsRaises / afCalls).toFixed(1),
+      wtsd: sawFlopCount ? Math.round((wtsdCount / sawFlopCount) * 100) : 0,
+      cbet: cbetOpp ? Math.round((cbetCount / cbetOpp) * 100) : 0,
+      foldToCbet: foldToCbetOpp ? Math.round((foldToCbetCount / foldToCbetOpp) * 100) : 0,
+      
+      posVpip: {
+        Early: calcPos(posVpip.Early, posHands.Early),
+        Middle: calcPos(posVpip.Middle, posHands.Middle),
+        Late: calcPos(posVpip.Late, posHands.Late),
+        Blinds: calcPos(posVpip.Blinds, posHands.Blinds)
+      },
+      posPfr: {
+        Early: calcPos(posPfr.Early, posHands.Early),
+        Middle: calcPos(posPfr.Middle, posHands.Middle),
+        Late: calcPos(posPfr.Late, posHands.Late),
+        Blinds: calcPos(posPfr.Blinds, posHands.Blinds)
+      }
     };
   };
 
@@ -658,6 +730,9 @@ export default function App() {
                   <div className="stat-label">Hands Played</div>
                   <div className="stat-value">{stats.totalHandsInvolved}</div>
                 </div>
+                <div className="stat-card" style={{gridColumn: '1 / -1', borderTop: '1px solid var(--border)', paddingTop: '1rem', marginTop: '0.5rem'}}>
+                  <div className="stat-label" style={{color: 'var(--accent)', textAlign: 'center'}}>PRE-FLOP STATS</div>
+                </div>
                 <div className="stat-card">
                   <div className="stat-label">VPIP</div>
                   <div className="stat-value">{stats.vpip}%</div>
@@ -673,6 +748,32 @@ export default function App() {
                 <div className="stat-card">
                   <div className="stat-label">Fold 2 3Bet</div>
                   <div className="stat-value">{stats.foldTo3Bet}%</div>
+                </div>
+                <div className="stat-card" style={{gridColumn: '1 / -1'}}>
+                  <div className="stat-label">VPIP BY POSITION (EP / MP / LP / BLINDS)</div>
+                  <div style={{color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.2rem', textAlign: 'center'}}>
+                    {stats.posVpip.Early}% / {stats.posVpip.Middle}% / {stats.posVpip.Late}% / {stats.posVpip.Blinds}%
+                  </div>
+                </div>
+
+                <div className="stat-card" style={{gridColumn: '1 / -1', borderTop: '1px solid var(--border)', paddingTop: '1rem', marginTop: '0.5rem'}}>
+                  <div className="stat-label" style={{color: 'var(--warning)', textAlign: 'center'}}>POST-FLOP STATS</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-label">Aggression Factor (AF)</div>
+                  <div className="stat-value">{stats.af}</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-label">Went To Showdown (WTSD)</div>
+                  <div className="stat-value">{stats.wtsd}%</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-label">Flop C-Bet</div>
+                  <div className="stat-value">{stats.cbet}%</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-label">Fold to C-Bet</div>
+                  <div className="stat-value">{stats.foldToCbet}%</div>
                 </div>
               </div>
             </div>
