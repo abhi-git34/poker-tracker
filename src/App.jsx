@@ -272,13 +272,24 @@ export default function App() {
   const handleCreateUser = () => {
     const name = prompt("Enter new user name:");
     if (!name) return;
-    const newUser = { id: `u_${Date.now()}`, name };
+    const newUser = { id: `u_${Date.now()}`, name, tags: [], notes: '' };
     setDoc(doc(db, 'users', newUser.id), newUser).catch(console.error);
     setUsers(prev => {
       if (prev.find(u => u.id === newUser.id)) return prev;
       return [...prev, newUser];
     });
     return newUser;
+  };
+
+  const updateGlobalUser = (userId, updates) => {
+    setUsers(prev => prev.map(u => {
+      if (u.id === userId) {
+        const updated = { ...u, ...updates };
+        setDoc(doc(db, 'users', updated.id), updated).catch(console.error);
+        return updated;
+      }
+      return u;
+    }));
   };
 
   const assignUserToSeat = (seatIdx, userId) => {
@@ -641,7 +652,13 @@ export default function App() {
                 const isFolded = currentSession.foldedSeats.includes(idx);
                 return (
                   <div key={p.userId} className={`seat seat-${idx+1} ${isActive && !currentSession.pendingShowdown ? 'active' : ''} ${isFolded ? 'folded' : ''}`} onClick={() => setModalSeatIdx(idx)}>
-                    <span className="name">{p.name}</span>
+                    <span className="name">
+                      {p.name}
+                      {(() => {
+                        const u = users.find(x => x.id === p.userId);
+                        return u && u.tags && u.tags.length > 0 ? <span style={{marginLeft: '4px', fontSize: '0.9rem'}}>{u.tags.join('')}</span> : null;
+                      })()}
+                    </span>
                     <div className="stack">${p.stack}</div>
                     {isDealer && <div className="dealer-button">D</div>}
                   </div>
@@ -713,9 +730,33 @@ export default function App() {
           <div className="modal" onClick={() => setSelectedUserForModal(null)}>
             <div className="modal-content panel" onClick={e => e.stopPropagation()}>
               <div className="modal-header">
-                <h2 style={{color: 'var(--accent)', margin: 0}}>{u.name}</h2>
+                <h2 style={{color: 'var(--accent)', margin: 0}}>
+                  {u.name} <span style={{fontSize: '1.2rem'}}>{u.tags?.join(' ')}</span>
+                </h2>
                 <button onClick={() => setSelectedUserForModal(null)} className="btn secondary">X</button>
               </div>
+
+              <div className="profiling-section mt-1 mb-2" style={{background: 'var(--bg-dark)', padding: '1rem', borderRadius: '8px'}}>
+                <div style={{color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '0.3rem'}}>Quick Tags</div>
+                <div style={{display: 'flex', gap: '0.5rem', marginBottom: '0.5rem'}}>
+                  {['🐟', '🦈', '💣', '🪨', '🤠'].map(emoji => (
+                    <button key={emoji} onClick={() => {
+                      const tags = u.tags || [];
+                      updateGlobalUser(u.id, { tags: tags.includes(emoji) ? tags.filter(t => t !== emoji) : [...tags, emoji] });
+                    }} className="btn action-btn" style={{padding: '0.5rem', opacity: u.tags?.includes(emoji) ? 1 : 0.4}}>
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+                <div style={{color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '0.3rem', marginTop: '0.5rem'}}>Notes</div>
+                <textarea 
+                  value={u.notes || ''} 
+                  onChange={e => updateGlobalUser(u.id, { notes: e.target.value })} 
+                  placeholder="Enter custom reads and notes here..." 
+                  style={{width: '100%', padding: '0.5rem', background: 'var(--bg)', color: 'white', borderRadius: '4px', border: '1px solid var(--border)', minHeight: '60px', boxSizing: 'border-box'}}
+                />
+              </div>
+              
               
               <div className="stats-grid mt-2" style={{gridTemplateColumns: 'repeat(2, 1fr)'}}>
                 <div className="stat-card" style={{gridColumn: '1 / -1', background: 'var(--border)'}}>
