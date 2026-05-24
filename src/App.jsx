@@ -45,6 +45,11 @@ export default function App() {
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [selectedUserForModal, setSelectedUserForModal] = useState(null);
   const [selectedHistorySessionId, setSelectedHistorySessionId] = useState(null);
+  const [selectedBankrollUserId, setSelectedBankrollUserId] = useState('');
+
+  const [heroSeat, setHeroSeat] = useState(0);
+  const [heroBuyIn, setHeroBuyIn] = useState(200);
+  const [heroUserId, setHeroUserId] = useState('none');
 
   const fileHandleRef = useRef(null);
 
@@ -83,6 +88,20 @@ export default function App() {
 
   const startSession = () => {
     const players = Array.from({ length: NUM_SEATS }, (_, i) => createAnonymousPlayer(i));
+    
+    if (heroUserId !== 'none') {
+      const u = users.find(x => x.id === heroUserId);
+      if (u) {
+        players[heroSeat] = {
+          userId: u.id,
+          name: u.name,
+          stack: heroBuyIn,
+          rebuys: heroBuyIn,
+          stackHistory: [{ time: new Date().toISOString(), stack: heroBuyIn, label: 'Join' }]
+        };
+      }
+    }
+
     const newSession = {
       id: Date.now(),
       startTime: new Date().toISOString(),
@@ -588,6 +607,115 @@ export default function App() {
   };
 
   const renderAllUsers = () => {
+    if (selectedUserForModal) {
+      const u = users.find(x => x.id === selectedUserForModal);
+      if (!u) return null;
+      const stats = calculateLifetimeStats(u.id);
+      return (
+        <div className="user-profile-page">
+          <button className="btn secondary mb-2" onClick={() => setSelectedUserForModal(null)}>← Back to Players</button>
+          
+          <div className="panel mb-2" style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.5rem'}}>
+            <h2 style={{color: 'var(--accent)', fontSize: '1.8rem', margin: 0}}>
+              {u.name} <span style={{fontSize: '1.2rem'}}>{u.tags?.join(' ')}</span>
+            </h2>
+          </div>
+
+          <div className="form-section">
+            <h3>Quick Tags</h3>
+            <div style={{display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap'}}>
+              {['🐟', '🦈', '💣', '🪨', '🤠', '🤡', '🤑', '🦁'].map(emoji => (
+                <button key={emoji} onClick={() => {
+                  const tags = u.tags || [];
+                  updateGlobalUser(u.id, { tags: tags.includes(emoji) ? tags.filter(t => t !== emoji) : [...tags, emoji] });
+                }} className="btn action-btn" style={{padding: '0.5rem 1rem', fontSize: '1.2rem', opacity: u.tags?.includes(emoji) ? 1 : 0.4}}>
+                  {emoji}
+                </button>
+              ))}
+            </div>
+            <div className="input-label">Notes & Reads</div>
+            <textarea 
+              value={u.notes || ''} 
+              onChange={e => updateGlobalUser(u.id, { notes: e.target.value })} 
+              placeholder="Enter custom reads and notes here..." 
+              style={{minHeight: '100px'}}
+            />
+          </div>
+          
+          <div className="stats-grid mt-2" style={{gridTemplateColumns: 'repeat(2, 1fr)'}}>
+            <div className="stat-card" style={{gridColumn: '1 / -1', background: 'var(--border)'}}>
+              <div className="stat-label">NET PROFIT</div>
+              <div className="stat-value" style={{color: stats.netProfit >= 0 ? 'var(--success)' : 'var(--danger)'}}>
+                {stats.netProfit >= 0 ? '+' : '-'}${Math.abs(stats.netProfit)} 
+                <span style={{fontSize: '1rem', color: 'var(--text-muted)'}}> (${stats.hourlyRate}/hr)</span>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Hours Played</div>
+              <div className="stat-value">{stats.totalHours}h</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Win Rate</div>
+              <div className="stat-value">{stats.winRate}%</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Lifetime Wins</div>
+              <div className="stat-value">{stats.wins}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Hands Played</div>
+              <div className="stat-value">{stats.totalHandsInvolved}</div>
+            </div>
+            <div className="stat-card" style={{gridColumn: '1 / -1', borderTop: '1px solid var(--border)', paddingTop: '1rem', marginTop: '0.5rem'}}>
+              <div className="stat-label" style={{color: 'var(--accent)', textAlign: 'center'}}>PRE-FLOP STATS</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">VPIP</div>
+              <div className="stat-value">{stats.vpip}%</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">PFR</div>
+              <div className="stat-value">{stats.pfr}%</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">3Bet</div>
+              <div className="stat-value">{stats.threeBet}%</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Fold 2 3Bet</div>
+              <div className="stat-value">{stats.foldTo3Bet}%</div>
+            </div>
+            <div className="stat-card" style={{gridColumn: '1 / -1'}}>
+              <div className="stat-label">VPIP BY POSITION (EP / MP / LP / BLINDS)</div>
+              <div style={{color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.2rem', textAlign: 'center'}}>
+                {stats.posVpip.Early}% / {stats.posVpip.Middle}% / {stats.posVpip.Late}% / {stats.posVpip.Blinds}%
+              </div>
+            </div>
+
+            <div className="stat-card" style={{gridColumn: '1 / -1', borderTop: '1px solid var(--border)', paddingTop: '1rem', marginTop: '0.5rem'}}>
+              <div className="stat-label" style={{color: 'var(--warning)', textAlign: 'center'}}>POST-FLOP STATS</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Aggression Factor (AF)</div>
+              <div className="stat-value">{stats.af}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Went To Showdown (WTSD)</div>
+              <div className="stat-value">{stats.wtsd}%</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Flop C-Bet</div>
+              <div className="stat-value">{stats.cbet}%</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Fold to C-Bet</div>
+              <div className="stat-value">{stats.foldToCbet}%</div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     if (users.length === 0) return <p className="panel">No global users created yet. Assign users to seats to see them here.</p>;
     
     const filteredUsers = users.filter(u => u.name.toLowerCase().includes(userSearchQuery.toLowerCase()));
@@ -625,6 +753,84 @@ export default function App() {
     setSelectedHistorySessionId(null);
     setSelectedUserForModal(null);
     setUserSearchQuery('');
+    
+    // Default bankroll user
+    if (tab === 'bankroll' && !selectedBankrollUserId && users.length > 0) {
+      setSelectedBankrollUserId(users[0].id);
+    }
+  };
+
+  const renderBankrollDashboard = () => {
+    if (users.length === 0) return <p className="panel">No users created yet.</p>;
+
+    const targetUser = users.find(u => u.id === selectedBankrollUserId) || users[0];
+    if (!targetUser) return null;
+
+    const stats = calculateLifetimeStats(targetUser.id);
+    
+    // Get sessions this user played in
+    const userSessions = sessions.filter(s => s.players.some(p => p.userId === targetUser.id)).sort((a,b) => b.id - a.id);
+
+    return (
+      <div className="bankroll-dashboard">
+        <div className="input-group panel mb-2">
+          <label>Select Player to View Bankroll</label>
+          <select 
+            value={selectedBankrollUserId} 
+            onChange={e => setSelectedBankrollUserId(e.target.value)}
+            style={{width: '100%', padding: '0.8rem', background: 'var(--bg)', color: 'white', border: '1px solid var(--border)', borderRadius: '4px'}}
+          >
+            {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+          </select>
+        </div>
+
+        <div className="stats-grid mb-2" style={{gridTemplateColumns: 'repeat(2, 1fr)'}}>
+          <div className="stat-card" style={{gridColumn: '1 / -1', background: 'var(--border)'}}>
+            <div className="stat-label">LIFETIME NET PROFIT</div>
+            <div className="stat-value" style={{color: stats.netProfit >= 0 ? 'var(--success)' : 'var(--danger)', fontSize: '2.5rem'}}>
+              {stats.netProfit >= 0 ? '+' : '-'}${Math.abs(stats.netProfit)} 
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Total Hours</div>
+            <div className="stat-value">{stats.totalHours}h</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Hourly Rate</div>
+            <div className="stat-value" style={{color: stats.hourlyRate >= 0 ? 'var(--success)' : 'var(--danger)'}}>
+              ${stats.hourlyRate}/hr
+            </div>
+          </div>
+        </div>
+
+        <h3>Session Breakdown</h3>
+        <div className="session-list mt-1" style={{display: 'flex', flexDirection: 'column', gap: '0.8rem'}}>
+          {userSessions.length === 0 && <p className="panel">No sessions played yet.</p>}
+          {userSessions.map((s, idx) => {
+            const p = s.players.find(x => x.userId === targetUser.id);
+            const profit = p.stack - p.rebuys;
+            const start = new Date(s.startTime);
+            const end = s.endTime ? new Date(s.endTime) : new Date();
+            const hrs = ((end - start) / (1000 * 60 * 60)).toFixed(1);
+
+            return (
+              <div key={s.id} className="panel" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: 0}}>
+                <div>
+                  <div style={{fontWeight: 'bold', fontSize: '1.1rem'}}>{s.location || 'Home Game'} <span style={{fontSize: '0.8rem', color: 'var(--accent)'}}>{s.gameType}</span></div>
+                  <div style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>{start.toLocaleDateString()} • {hrs}h played</div>
+                </div>
+                <div style={{textAlign: 'right'}}>
+                  <div style={{fontWeight: 'bold', fontSize: '1.2rem', color: profit >= 0 ? 'var(--success)' : 'var(--danger)'}}>
+                    {profit >= 0 ? '+' : '-'}${Math.abs(profit)}
+                  </div>
+                  <div style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>${p.rebuys} In / ${p.stack} Out</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
   };
 
   // -- Main Render --
@@ -637,37 +843,66 @@ export default function App() {
         </div>
       </header>
 
-      <div className="view-toggles">
-        <button onClick={() => handleGlobalTabChange('session')} className={`toggle-btn ${viewMode === 'session' ? 'active' : ''}`}>Live Table</button>
+      <div className="view-toggles" style={{gridTemplateColumns: 'repeat(4, 1fr)'}}>
+        <button onClick={() => handleGlobalTabChange('session')} className={`toggle-btn ${viewMode === 'session' ? 'active' : ''}`}>Table</button>
+        <button onClick={() => handleGlobalTabChange('bankroll')} className={`toggle-btn ${viewMode === 'bankroll' ? 'active' : ''}`}>Bankroll</button>
         <button onClick={() => handleGlobalTabChange('history')} className={`toggle-btn ${viewMode === 'history' ? 'active' : ''}`}>History</button>
-        <button onClick={() => handleGlobalTabChange('users')} className={`toggle-btn ${viewMode === 'users' ? 'active' : ''}`}>All Users</button>
+        <button onClick={() => handleGlobalTabChange('users')} className={`toggle-btn ${viewMode === 'users' ? 'active' : ''}`}>Users</button>
       </div>
 
       {viewMode === 'session' && !currentSession && (
-        <section className="panel">
-          <h2 style={{marginBottom: '1rem'}}>Start 9-Max Session</h2>
-          <div className="input-group mb-1">
-            <label>Location</label>
-            <input type="text" value={sessionLocation} onChange={e => setSessionLocation(e.target.value)} />
-          </div>
-          <div className="input-group mb-1">
-            <label>Game Type</label>
-            <select value={sessionGameType} onChange={e => setSessionGameType(e.target.value)} style={{width: '100%', padding: '0.8rem', background: 'var(--bg-dark)', color: 'white', border: '1px solid var(--border)', borderRadius: '4px'}}>
-              <option value="NLH">No Limit Hold'em (NLH)</option>
-              <option value="PLO">Pot Limit Omaha (PLO)</option>
-            </select>
-          </div>
-          <div style={{display: 'flex', gap: '0.5rem'}}>
-            <div className="input-group" style={{flex: 1}}>
-              <label>Small Blind ($)</label>
-              <input type="number" value={sbAmount} onChange={e => setSbAmount(parseFloat(e.target.value))} />
+        <section className="panel" style={{padding: '2rem'}}>
+          <h2 style={{marginBottom: '1.5rem', fontSize: '1.5rem', textAlign: 'center'}}>Start Session</h2>
+          
+          <div className="form-section">
+            <h3>📍 Game Details</h3>
+            <div className="input-group mb-1">
+              <label className="input-label">Location</label>
+              <input type="text" value={sessionLocation} onChange={e => setSessionLocation(e.target.value)} />
             </div>
-            <div className="input-group mb-2" style={{flex: 1}}>
-              <label>Big Blind ($)</label>
-              <input type="number" value={bbAmount} onChange={e => setBbAmount(parseFloat(e.target.value))} />
+            <div className="input-group mb-1">
+              <label className="input-label">Game Type</label>
+              <select value={sessionGameType} onChange={e => setSessionGameType(e.target.value)}>
+                <option value="NLH">No Limit Hold'em (NLH)</option>
+                <option value="PLO">Pot Limit Omaha (PLO)</option>
+              </select>
+            </div>
+            <div style={{display: 'flex', gap: '1rem'}}>
+              <div className="input-group" style={{flex: 1}}>
+                <label className="input-label">Small Blind ($)</label>
+                <input type="number" value={sbAmount} onChange={e => setSbAmount(parseFloat(e.target.value))} />
+              </div>
+              <div className="input-group" style={{flex: 1}}>
+                <label className="input-label">Big Blind ($)</label>
+                <input type="number" value={bbAmount} onChange={e => setBbAmount(parseFloat(e.target.value))} />
+              </div>
             </div>
           </div>
-          <button onClick={startSession} className="btn primary full-width mt-2">Start Session</button>
+
+          <div className="form-section">
+            <h3>🦸‍♂️ Hero Setup</h3>
+            <div className="input-group mb-1">
+              <label className="input-label">Your Global Profile</label>
+              <select value={heroUserId} onChange={e => setHeroUserId(e.target.value)}>
+                <option value="none">-- Anonymous / Don't Seat Me --</option>
+                {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+              </select>
+            </div>
+            <div style={{display: 'flex', gap: '1rem'}}>
+              <div className="input-group" style={{flex: 1}}>
+                <label className="input-label">Your Seat</label>
+                <select value={heroSeat} onChange={e => setHeroSeat(parseInt(e.target.value))}>
+                  {Array.from({length: 9}).map((_, i) => <option key={i} value={i}>Seat {i + 1}</option>)}
+                </select>
+              </div>
+              <div className="input-group" style={{flex: 1}}>
+                <label className="input-label">Starting Stack ($)</label>
+                <input type="number" value={heroBuyIn} onChange={e => setHeroBuyIn(parseFloat(e.target.value))} />
+              </div>
+            </div>
+          </div>
+
+          <button onClick={startSession} className="btn primary full-width" style={{padding: '1rem', fontSize: '1.1rem'}}>Start Table</button>
         </section>
       )}
 
@@ -685,13 +920,14 @@ export default function App() {
                 const isFolded = currentSession.foldedSeats.includes(idx);
                 return (
                   <div key={p.userId} className={`seat seat-${idx+1} ${isActive && !currentSession.pendingShowdown ? 'active' : ''} ${isFolded ? 'folded' : ''}`} onClick={() => setModalSeatIdx(idx)}>
-                    <span className="name">
-                      {p.name}
-                      {(() => {
-                        const u = users.find(x => x.id === p.userId);
-                        return u && u.tags && u.tags.length > 0 ? <span style={{marginLeft: '4px', fontSize: '0.9rem'}}>{u.tags.join('')}</span> : null;
-                      })()}
-                    </span>
+                    {(() => {
+                      const u = users.find(x => x.id === p.userId);
+                      if (u && u.tags && u.tags.length > 0) {
+                        return <div className="seat-tags">{u.tags.join('')}</div>;
+                      }
+                      return null;
+                    })()}
+                    <span className="name">{p.name}</span>
                     <div className="stack">${p.stack}</div>
                     {isDealer && <div className="dealer-button">D</div>}
                   </div>
@@ -754,117 +990,14 @@ export default function App() {
         </section>
       )}
 
-      {/* Global User Stats Modal */}
-      {selectedUserForModal && (() => {
-        const u = users.find(x => x.id === selectedUserForModal);
-        if (!u) return null;
-        const stats = calculateLifetimeStats(u.id);
-        return (
-          <div className="modal" onClick={() => setSelectedUserForModal(null)}>
-            <div className="modal-content panel" onClick={e => e.stopPropagation()}>
-              <div className="modal-header">
-                <h2 style={{color: 'var(--accent)', margin: 0}}>
-                  {u.name} <span style={{fontSize: '1.2rem'}}>{u.tags?.join(' ')}</span>
-                </h2>
-                <button onClick={() => setSelectedUserForModal(null)} className="btn secondary">X</button>
-              </div>
+      {viewMode === 'bankroll' && (
+        <section>
+          <h2 className="mb-2" style={{padding: '0 0.5rem'}}>Bankroll Manager</h2>
+          {renderBankrollDashboard()}
+        </section>
+      )}
 
-              <div className="profiling-section mt-1 mb-2" style={{background: 'var(--bg-dark)', padding: '1rem', borderRadius: '8px'}}>
-                <div style={{color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '0.3rem'}}>Quick Tags</div>
-                <div style={{display: 'flex', gap: '0.5rem', marginBottom: '0.5rem'}}>
-                  {['🐟', '🦈', '💣', '🪨', '🤠'].map(emoji => (
-                    <button key={emoji} onClick={() => {
-                      const tags = u.tags || [];
-                      updateGlobalUser(u.id, { tags: tags.includes(emoji) ? tags.filter(t => t !== emoji) : [...tags, emoji] });
-                    }} className="btn action-btn" style={{padding: '0.5rem', opacity: u.tags?.includes(emoji) ? 1 : 0.4}}>
-                      {emoji}
-                    </button>
-                  ))}
-                </div>
-                <div style={{color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '0.3rem', marginTop: '0.5rem'}}>Notes</div>
-                <textarea 
-                  value={u.notes || ''} 
-                  onChange={e => updateGlobalUser(u.id, { notes: e.target.value })} 
-                  placeholder="Enter custom reads and notes here..." 
-                  style={{width: '100%', padding: '0.5rem', background: 'var(--bg)', color: 'white', borderRadius: '4px', border: '1px solid var(--border)', minHeight: '60px', boxSizing: 'border-box'}}
-                />
-              </div>
-              
-              
-              <div className="stats-grid mt-2" style={{gridTemplateColumns: 'repeat(2, 1fr)'}}>
-                <div className="stat-card" style={{gridColumn: '1 / -1', background: 'var(--border)'}}>
-                  <div className="stat-label">NET PROFIT</div>
-                  <div className="stat-value" style={{color: stats.netProfit >= 0 ? 'var(--success)' : 'var(--danger)'}}>
-                    {stats.netProfit >= 0 ? '+' : '-'}${Math.abs(stats.netProfit)} 
-                    <span style={{fontSize: '1rem', color: 'var(--text-muted)'}}> (${stats.hourlyRate}/hr)</span>
-                  </div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-label">Hours Played</div>
-                  <div className="stat-value">{stats.totalHours}h</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-label">Win Rate</div>
-                  <div className="stat-value">{stats.winRate}%</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-label">Lifetime Wins</div>
-                  <div className="stat-value">{stats.wins}</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-label">Hands Played</div>
-                  <div className="stat-value">{stats.totalHandsInvolved}</div>
-                </div>
-                <div className="stat-card" style={{gridColumn: '1 / -1', borderTop: '1px solid var(--border)', paddingTop: '1rem', marginTop: '0.5rem'}}>
-                  <div className="stat-label" style={{color: 'var(--accent)', textAlign: 'center'}}>PRE-FLOP STATS</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-label">VPIP</div>
-                  <div className="stat-value">{stats.vpip}%</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-label">PFR</div>
-                  <div className="stat-value">{stats.pfr}%</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-label">3Bet</div>
-                  <div className="stat-value">{stats.threeBet}%</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-label">Fold 2 3Bet</div>
-                  <div className="stat-value">{stats.foldTo3Bet}%</div>
-                </div>
-                <div className="stat-card" style={{gridColumn: '1 / -1'}}>
-                  <div className="stat-label">VPIP BY POSITION (EP / MP / LP / BLINDS)</div>
-                  <div style={{color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.2rem', textAlign: 'center'}}>
-                    {stats.posVpip.Early}% / {stats.posVpip.Middle}% / {stats.posVpip.Late}% / {stats.posVpip.Blinds}%
-                  </div>
-                </div>
 
-                <div className="stat-card" style={{gridColumn: '1 / -1', borderTop: '1px solid var(--border)', paddingTop: '1rem', marginTop: '0.5rem'}}>
-                  <div className="stat-label" style={{color: 'var(--warning)', textAlign: 'center'}}>POST-FLOP STATS</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-label">Aggression Factor (AF)</div>
-                  <div className="stat-value">{stats.af}</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-label">Went To Showdown (WTSD)</div>
-                  <div className="stat-value">{stats.wtsd}%</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-label">Flop C-Bet</div>
-                  <div className="stat-value">{stats.cbet}%</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-label">Fold to C-Bet</div>
-                  <div className="stat-value">{stats.foldToCbet}%</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
 
       {/* Live Table Seat Modal */}
       {modalSeatIdx !== null && typeof modalSeatIdx === 'number' && currentSession && (
