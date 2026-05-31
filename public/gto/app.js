@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // SIDEBAR NAVIGATION
     // ==========================================
-    const navItems = document.querySelectorAll('.nav-item');
+    const navItems = document.querySelectorAll('.nav-item, .mobile-nav-item');
     const sections = document.querySelectorAll('.view-section');
     
     navItems.forEach(item => {
@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const targetTab = item.getAttribute('data-tab');
             
             navItems.forEach(nav => nav.classList.remove('active'));
-            item.classList.add('active');
+            document.querySelectorAll(`[data-tab="${targetTab}"]`).forEach(nav => nav.classList.add('active'));
             
             sections.forEach(sec => {
                 sec.classList.remove('active');
@@ -70,6 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeRangeGrid = null;
     let customActions = [];
     let activeCustomSpot = null; // Stores training custom spot config
+    let pinnedHand = null;
 
     // Sync stack slider and number input
     custStackRange.addEventListener('input', () => {
@@ -246,8 +247,27 @@ document.addEventListener('DOMContentLoaded', () => {
         renderGridFromRange(activeRangeGrid);
     }
 
+    function clearHandDetails() {
+        detailHandName.textContent = 'Hover over grid';
+        detailHandCombos.textContent = '-';
+        detailBars.style.display = 'none';
+    }
+
+    // Restore details to pinned hand or clear on mouseleave
+    explorerGrid.addEventListener('mouseleave', () => {
+        if (pinnedHand) {
+            updateHandDetails(pinnedHand.name, pinnedHand.combos, pinnedHand.f, pinnedHand.cl, pinnedHand.ra);
+        } else {
+            clearHandDetails();
+        }
+    });
+
     function renderGridFromRange(grid) {
         explorerGrid.innerHTML = '';
+        
+        // Reset pinned hand on range change
+        pinnedHand = null;
+        clearHandDetails();
         
         let totalFoldCombos = 0;
         let totalCallCombos = 0;
@@ -280,6 +300,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 cell.addEventListener('mouseover', () => {
                     updateHandDetails(handName, combos, f, cl, ra);
+                });
+
+                cell.addEventListener('click', () => {
+                    const isCurrentlyPinned = cell.classList.contains('pinned');
+                    
+                    // Remove pinned from all cells
+                    explorerGrid.querySelectorAll('.hand-cell').forEach(c => c.classList.remove('pinned'));
+                    
+                    if (isCurrentlyPinned) {
+                        pinnedHand = null;
+                        clearHandDetails();
+                    } else {
+                        cell.classList.add('pinned');
+                        pinnedHand = { name: handName, combos: combos, f: f, cl: cl, ra: ra };
+                        updateHandDetails(handName, combos, f, cl, ra);
+                    }
                 });
                 
                 explorerGrid.appendChild(cell);

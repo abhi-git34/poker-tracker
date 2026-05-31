@@ -783,3 +783,204 @@ body {
 
 .scorecard-val.green { color: var(--accent-emerald); }
 .scorecard-val.rose { color: var(--accent-rose); }
+
+/* ==========================================
+   MOBILE LAYOUT & RESPONSIVENESS
+   ========================================== */
+
+/* Pinned cell styling */
+.hand-cell.pinned {
+    outline: 2px solid var(--accent-cyan) !important;
+    outline-offset: 1px;
+    z-index: 8;
+    box-shadow: 0 0 10px var(--accent-cyan);
+}
+
+.mobile-header {
+    display: none;
+}
+.mobile-bottom-nav {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    body {
+        flex-direction: column;
+        overflow-y: auto;
+        height: auto;
+    }
+    
+    .sidebar {
+        display: none !important;
+    }
+    
+    .mobile-header {
+        display: flex;
+        background-color: #0b0f19;
+        border-bottom: 1px solid var(--border-color);
+        padding: 0.75rem 1rem;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 101;
+        align-items: center;
+        height: 56px;
+    }
+    
+    .main-content {
+        margin-left: 0 !important;
+        padding: 4.5rem 1rem 5.5rem 1rem !important; /* Top padding for header, bottom padding for nav bar */
+        min-height: calc(100vh - 56px);
+    }
+    
+    /* Bottom Nav Bar */
+    .mobile-bottom-nav {
+        display: flex;
+        background-color: rgba(15, 23, 42, 0.95);
+        border-top: 1px solid var(--border-color);
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 64px;
+        z-index: 101;
+        justify-content: space-around;
+        align-items: center;
+        padding: 0.25rem 0;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+    
+    .mobile-nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: 0.7rem;
+        font-weight: 600;
+        gap: 4px;
+        flex: 1;
+        height: 100%;
+        transition: var(--transition-fast);
+        opacity: 0.75;
+    }
+    
+    .mobile-nav-item.active {
+        color: var(--accent-cyan);
+        opacity: 1.0;
+    }
+    
+    .mobile-nav-item svg {
+        width: 20px;
+        height: 20px;
+    }
+    
+    /* Matrix and Explorer */
+    .matrix-container {
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+    
+    .range-grid-wrapper {
+        width: 100%;
+        max-width: 100%;
+    }
+    
+    .range-grid {
+        max-width: 100%;
+    }
+    
+    .control-sidebar {
+        width: 100%;
+    }
+    
+    /* Stacking Dashboards and Solvers */
+    .dashboard-grid, .solver-layout {
+        grid-template-columns: 1fr !important;
+    }
+    
+    /* Responsive Poker Table */
+    .poker-table-card {
+        padding: 1rem 0.5rem;
+    }
+    
+    .poker-table-container {
+        max-width: 100%;
+        aspect-ratio: 1.6;
+        border-width: 10px;
+        margin: 1.5rem 0;
+    }
+    
+    .player-seat {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .seat-avatar {
+        width: 36px;
+        height: 36px;
+        font-size: 0.7rem;
+        border-width: 2px;
+    }
+    
+    .seat-label {
+        font-size: 0.6rem;
+        padding: 1px 4px;
+    }
+    
+    .action-bubble {
+        font-size: 0.6rem;
+        padding: 1px 4px;
+        bottom: -10px;
+    }
+    
+    /* Reposition seats slightly closer to table edges on mobile */
+    .seat-co { right: -20px; }
+    .seat-bb { left: -20px; }
+    .seat-hj { right: -20px; }
+    
+    /* Interactive Card sizing */
+    .card-poker {
+        width: 44px;
+        height: 64px;
+        font-size: 0.95rem;
+    }
+    
+    .card-poker .suit-top {
+        font-size: 0.85rem;
+    }
+    
+    .card-poker .suit-bottom {
+        font-size: 1.1rem;
+    }
+    
+    /* Scorecards */
+    .scorecard-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+    
+    .scorecard-box {
+        padding: 0.75rem;
+    }
+    
+    .scorecard-val {
+        font-size: 1.25rem;
+    }
+    
+    .choice-container {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .choice-container .btn {
+        flex: 1;
+        min-width: 100px;
+        padding: 0.6rem 1rem;
+        font-size: 0.9rem;
+    }
+}
+
