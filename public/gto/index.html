@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GTO Solver & Trainer - Free GTO Wizard Alternative</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="logo-container">
+            <div class="logo-icon">Ω</div>
+            <div>
+                <span class="logo-text">GTO Solver</span>
+                <span class="logo-badge">FREE</span>
+            </div>
+        </div>
+        
+        <nav>
+            <ul class="nav-links">
+                <li>
+                    <a class="nav-item active" data-tab="range-explorer">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z"></path></svg>
+                        Range Explorer
+                    </a>
+                </li>
+                <li>
+                    <a class="nav-item" data-tab="gto-trainer">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        GTO Trainer
+                    </a>
+                </li>
+                <li>
+                    <a class="nav-item" data-tab="push-fold-solver">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                        Push / Fold Solver
+                    </a>
+                </li>
+                <li>
+                    <a class="nav-item" data-tab="kuhn-cfr">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                        Kuhn CFR Solver
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <div class="footer-title">Engine</div>
+            <div class="footer-subtitle">JS Web CFR v1.0</div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+
+        <!-- 1. RANGE EXPLORER SECTION -->
+        <section id="range-explorer" class="view-section active">
+            <div class="header-container">
+                <div>
+                    <h1 class="page-title">Range Explorer</h1>
+                    <p class="page-desc">Investigate GTO preflop opening and defense strategies.</p>
+                </div>
+            </div>
+            
+            <div class="matrix-container">
+                <!-- 13x13 GRID CARD -->
+                <div class="card range-grid-wrapper">
+                    <div id="explorer-grid" class="range-grid">
+                        <!-- Filled dynamically by JavaScript -->
+                    </div>
+                </div>
+                
+                <!-- CONTROL PANEL SIDEBAR -->
+                <div class="control-sidebar">
+                    <div class="card">
+                        <h2 class="card-title">Scenario</h2>
+                        <select id="explorer-scenario" class="scenario-select">
+                            <optgroup label="6-Max 100BB Preflop Open">
+                                <option value="UTG_Open">UTG Open-Raise (15%)</option>
+                                <option value="HJ_Open">HJ Open-Raise (20%)</option>
+                                <option value="CO_Open">CO Open-Raise (26%)</option>
+                                <option value="BTN_Open">BTN Open-Raise (40%)</option>
+                                <option value="SB_Open">SB Open-Raise (44%)</option>
+                            </optgroup>
+                            <optgroup label="6-Max 100BB Preflop Defense">
+                                <option value="BTN_vs_UTG_Open">BTN vs UTG Open</option>
+                                <option value="SB_vs_BTN_Open">SB vs BTN Open</option>
+                                <option value="BB_vs_BTN_Open">BB vs BTN Open</option>
+                            </optgroup>
+                            <optgroup label="Advanced Custom Settings">
+                                <option value="CUSTOM">Custom Scenario Builder...</option>
+                            </optgroup>
+                        </select>
+                    </div>
+
+                    <!-- CUSTOM SCENARIO BUILDER PANEL -->
+                    <div id="custom-builder-card" class="card" style="display: none; border-color: var(--border-color-glow);">
+                        <h2 class="card-title" style="color: var(--accent-cyan);">Custom Settings</h2>
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                            <div class="form-group">
+                                <label>Game Type</label>
+                                <select id="cust-game-type" class="scenario-select" style="padding: 0.5rem;">
+                                    <option value="CASH">Cash Game (Rake)</option>
+                                    <option value="MTT">MTT Tournament (Ante, No Rake)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Table Size</label>
+                                <select id="cust-table-size" class="scenario-select" style="padding: 0.5rem;">
+                                    <option value="6MAX">6-Max Table</option>
+                                    <option value="9MAX">9-Max Table</option>
+                                    <option value="2MAX">Heads Up (2-Max)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Stack Depth (BB)</label>
+                                <div style="display:flex; gap: 10px; align-items:center;">
+                                    <input type="range" id="cust-stack-range" min="10" max="1000" step="10" value="100" style="flex:1; accent-color: var(--accent-cyan);">
+                                    <input type="number" id="cust-stack-val" min="10" max="1000" value="100" class="solver-input" style="width: 70px; padding: 4px; font-size: 0.85rem; text-align: center;">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Active Hero Position</label>
+                                <select id="cust-hero-pos" class="scenario-select" style="padding: 0.5rem;">
+                                    <!-- Populated dynamically by JS based on Table Size -->
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Action Sequence Builder</label>
+                                <div style="display: flex; gap: 6px;">
+                                    <select id="cust-action-select" class="scenario-select" style="padding: 0.5rem; flex: 1;">
+                                        <option value="FOLD">Fold</option>
+                                        <option value="OPEN">Raise to 2.5 BB</option>
+                                        <option value="CALL">Call</option>
+                                        <option value="3BET">3-Bet to 9 BB</option>
+                                    </select>
+                                    <button class="btn btn-call" id="btn-cust-add-action" style="padding: 4px 10px; font-size: 0.8rem; box-shadow:none;">Add</button>
+                                </div>
+                                <div id="cust-action-list" style="display: flex; flex-direction: column; gap: 4px; background: rgba(0,0,0,0.2); border-radius: 6px; padding: 6px; min-height: 40px; font-size: 0.8rem; border: 1px dashed var(--border-color);">
+                                    <!-- Actions listed here -->
+                                </div>
+                                <button class="btn btn-fold" id="btn-cust-clear-actions" style="padding: 2px; font-size: 0.75rem; width: 100%; border-radius: 4px;">Clear Actions</button>
+                            </div>
+                            <button class="btn btn-primary" id="btn-cust-solve" style="padding: 0.6rem; width: 100%; font-size: 0.9rem;">Solve Custom Range</button>
+                            <button class="btn btn-call" id="btn-cust-practice" style="padding: 0.6rem; width: 100%; font-size: 0.9rem;">Practice This Spot</button>
+                        </div>
+                    </div>
+
+                    
+                    <div class="card">
+                        <h2 class="card-title">GTO Actions</h2>
+                        <ul class="legend-list">
+                            <li class="legend-item">
+                                <span class="legend-color-label">
+                                    <span class="legend-color-box raise"></span>
+                                    Raise / 3-Bet
+                                </span>
+                                <span id="stat-raise-pct" class="stat-val">0.0%</span>
+                            </li>
+                            <li class="legend-item">
+                                <span class="legend-color-label">
+                                    <span class="legend-color-box call"></span>
+                                    Call
+                                </span>
+                                <span id="stat-call-pct" class="stat-val">0.0%</span>
+                            </li>
+                            <li class="legend-item">
+                                <span class="legend-color-label">
+                                    <span class="legend-color-box fold"></span>
+                                    Fold
+                                </span>
+                                <span id="stat-fold-pct" class="stat-val">0.0%</span>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div class="card">
+                        <h2 class="card-title">Hand Details</h2>
+                        <div id="hand-details-panel" class="hand-info-panel">
+                            <div class="hand-info-title">
+                                <span id="detail-hand-name">Hover over grid</span>
+                                <span id="detail-hand-combos" style="color: var(--text-secondary); font-size: 0.95rem;">-</span>
+                            </div>
+                            <div id="detail-bars" style="display: none;">
+                                <div class="freq-bar-container">
+                                    <div id="bar-fold" class="freq-segment" style="background-color: var(--gto-fold);"></div>
+                                    <div id="bar-call" class="freq-segment" style="background-color: var(--gto-call);"></div>
+                                    <div id="bar-raise" class="freq-segment" style="background-color: var(--gto-raise);"></div>
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem;">
+                                    <div style="display:flex; justify-content:space-between"><span>Raise:</span><span id="lbl-raise-val" style="font-weight:600; color: var(--accent-rose)">0%</span></div>
+                                    <div style="display:flex; justify-content:space-between"><span>Call:</span><span id="lbl-call-val" style="font-weight:600; color: var(--accent-emerald)">0%</span></div>
+                                    <div style="display:flex; justify-content:space-between"><span>Fold:</span><span id="lbl-fold-val" style="font-weight:600; color: var(--text-secondary)">0%</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. GTO TRAINER SECTION -->
+        <section id="gto-trainer" class="view-section">
+            <div class="header-container">
+                <div>
+                    <h1 class="page-title">GTO Trainer</h1>
+                    <p class="page-desc">Practice preflop decisions and get instant EV audits on your actions.</p>
+                </div>
+            </div>
+            
+            <!-- SCOREBOARD -->
+            <div class="scorecard-grid">
+                <div class="scorecard-box">
+                    <div class="footer-title">Hands Played</div>
+                    <div id="score-played" class="scorecard-val">0</div>
+                </div>
+                <div class="scorecard-box">
+                    <div class="footer-title">GTO Accuracy</div>
+                    <div id="score-accuracy" class="scorecard-val green">0%</div>
+                </div>
+                <div class="scorecard-box">
+                    <div class="footer-title">Net EV Loss</div>
+                    <div id="score-ev-loss" class="scorecard-val rose">0.00 BB</div>
+                </div>
+                <div class="scorecard-box">
+                    <div class="footer-title">Scenario</div>
+                    <div id="trainer-scenario-lbl" class="scorecard-val" style="font-size: 1.15rem; margin-top: 0.5rem;">Random Preflop</div>
+                </div>
+            </div>
+            
+            <div class="card poker-table-card">
+                <!-- Poker Table -->
+                <div class="poker-table-container">
+                    <div class="table-center-info">
+                        <div class="table-pot">Pot: 1.5 BB</div>
+                        <div class="board-cards" id="trainer-board">
+                            <!-- Preflop, no board cards -->
+                        </div>
+                    </div>
+                    
+                    <!-- Player seats -->
+                    <div class="player-seat seat-utg">
+                        <div class="seat-avatar" id="avatar-UTG">UTG</div>
+                        <div class="seat-label" id="label-UTG">UTG</div>
+                        <div class="action-bubble" id="action-UTG" style="display:none">Fold</div>
+                    </div>
+                    <div class="player-seat seat-utg1">
+                        <div class="seat-avatar" id="avatar-UTG1">UTG1</div>
+                        <div class="seat-label" id="label-UTG1">UTG+1</div>
+                        <div class="action-bubble" id="action-UTG1" style="display:none">Fold</div>
+                    </div>
+                    <div class="player-seat seat-mp">
+                        <div class="seat-avatar" id="avatar-MP">MP</div>
+                        <div class="seat-label" id="label-MP">MP</div>
+                        <div class="action-bubble" id="action-MP" style="display:none">Fold</div>
+                    </div>
+                    <div class="player-seat seat-lj">
+                        <div class="seat-avatar" id="avatar-LJ">LJ</div>
+                        <div class="seat-label" id="label-LJ">LJ</div>
+                        <div class="action-bubble" id="action-LJ" style="display:none">Fold</div>
+                    </div>
+                    <div class="player-seat seat-hj">
+                        <div class="seat-avatar" id="avatar-HJ">HJ</div>
+                        <div class="seat-label" id="label-HJ">HJ</div>
+                        <div class="action-bubble" id="action-HJ" style="display:none">Fold</div>
+                    </div>
+                    <div class="player-seat seat-co">
+                        <div class="seat-avatar" id="avatar-CO">CO</div>
+                        <div class="seat-label" id="label-CO">CO</div>
+                        <div class="action-bubble" id="action-CO" style="display:none">Fold</div>
+                    </div>
+                    <div class="player-seat seat-btn">
+                        <div class="seat-avatar active-hero" id="avatar-BTN">BTN</div>
+                        <div class="seat-label" id="label-BTN">BTN (Hero)</div>
+                        <div class="action-bubble" id="action-BTN" style="display:none">Fold</div>
+                    </div>
+                    <div class="player-seat seat-sb">
+                        <div class="seat-avatar" id="avatar-SB">SB</div>
+                        <div class="seat-label" id="label-SB">SB</div>
+                        <div class="action-bubble" id="action-SB" style="display:none">Fold</div>
+                    </div>
+                    <div class="player-seat seat-bb">
+                        <div class="seat-avatar" id="avatar-BB">BB</div>
+                        <div class="seat-label" id="label-BB">BB</div>
+                        <div class="action-bubble" id="action-BB" style="display:none">Fold</div>
+                    </div>
+                </div>
+                
+                <!-- Hero Hand display -->
+                <div style="display:flex; flex-direction:column; align-items:center; gap: 0.5rem;">
+                    <div style="font-weight:600; font-size:0.9rem; color:var(--text-secondary)">YOUR HAND</div>
+                    <div class="trainer-hands-display" id="trainer-hero-cards">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+                
+                <!-- Player Inputs -->
+                <div class="choice-container" id="trainer-actions-panel">
+                    <button class="btn btn-fold" id="btn-hero-fold">Fold</button>
+                    <button class="btn btn-call" id="btn-hero-call">Call</button>
+                    <button class="btn btn-raise" id="btn-hero-raise">Raise 2.5 BB</button>
+                </div>
+                
+                <!-- Feedback overlay -->
+                <div class="feedback-overlay" id="trainer-feedback" style="display:none">
+                    <h3 class="feedback-headline" id="feedback-headline">Correct Decision!</h3>
+                    <p id="feedback-body">Fold is GTO 100% of the time here.</p>
+                    <button class="btn btn-primary" id="btn-next-hand" style="margin-top: 1rem; padding: 0.5rem 1.25rem; font-size:0.9rem">Next Hand</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. PUSH / FOLD SOLVER SECTION -->
+        <section id="push-fold-solver" class="view-section">
+            <div class="header-container">
+                <div>
+                    <h1 class="page-title">Push / Fold Solver</h1>
+                    <p class="page-desc">Run standard preflop Push/Fold algorithms dynamically in your browser.</p>
+                </div>
+            </div>
+            
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <h2 class="card-title">Solver Settings</h2>
+                <div class="solver-options">
+                    <div class="form-group">
+                        <label for="pf-stack">Stack Size (Big Blinds)</label>
+                        <input type="number" id="pf-stack" class="solver-input" value="10" min="2" max="25">
+                    </div>
+                    <div class="form-group">
+                        <label for="pf-iterations">Accuracy (CFR Iterations)</label>
+                        <select id="pf-iterations" class="solver-input">
+                            <option value="50">Fast (50 iterations)</option>
+                            <option value="120" selected>Standard (120 iterations)</option>
+                            <option value="300">High Precision (300 iterations)</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="justify-content: flex-end;">
+                        <button class="btn btn-primary" id="btn-run-pf" style="width: 100%;">Solve Nash Equilibrium</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="solver-layout">
+                <!-- SB PUSHING RANGE -->
+                <div class="card">
+                    <h2 class="card-title">
+                        <span class="legend-color-box raise" style="background-color: var(--accent-rose);"></span>
+                        SB Pushing Range (Fold / Push)
+                    </h2>
+                    <div id="pf-sb-grid" class="range-grid">
+                        <!-- Filled dynamically -->
+                    </div>
+                </div>
+                
+                <!-- BB CALLING RANGE -->
+                <div class="card">
+                    <h2 class="card-title">
+                        <span class="legend-color-box call" style="background-color: var(--accent-emerald);"></span>
+                        BB Calling Range (Fold / Call)
+                    </h2>
+                    <div id="pf-bb-grid" class="range-grid">
+                        <!-- Filled dynamically -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. KUHN CFR SECTION -->
+        <section id="kuhn-cfr" class="view-section">
+            <div class="header-container">
+                <div>
+                    <h1 class="page-title">Kuhn Poker CFR Solver</h1>
+                    <p class="page-desc">Watch Counterfactual Regret Minimization calculate GTO Nash strategies in real-time.</p>
+                </div>
+            </div>
+            
+            <div class="solver-layout" style="grid-template-columns: 1.2fr 1.8fr;">
+                <!-- CFR controls and graphs -->
+                <div style="display:flex; flex-direction:column; gap: 1.5rem">
+                    <div class="card">
+                        <h2 class="card-title">Solver Controls</h2>
+                        <div style="display:flex; flex-direction:column; gap: 0.75rem;">
+                            <button class="btn btn-primary" id="btn-cfr-step">Iterate +100 Times</button>
+                            <button class="btn btn-call" id="btn-cfr-run">Run +10,000 Iterations</button>
+                            <button class="btn btn-fold" id="btn-cfr-reset">Reset Strategy</button>
+                        </div>
+                        
+                        <div class="cfr-stats">
+                            <div class="cfr-stat-box">
+                                <div class="cfr-stat-lbl">Iterations</div>
+                                <div id="cfr-stat-iter" class="cfr-stat-num">0</div>
+                            </div>
+                            <div class="cfr-stat-box">
+                                <div class="cfr-stat-lbl">Distance to Nash</div>
+                                <div id="cfr-stat-exploit" class="cfr-stat-num">1.000</div>
+                            </div>
+                            <div class="cfr-stat-box">
+                                <div class="cfr-stat-lbl">P1 EV</div>
+                                <div id="cfr-stat-ev" class="cfr-stat-num">0.00</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <h2 class="card-title">Convergence Chart</h2>
+                        <div class="chart-wrapper">
+                            <canvas id="cfr-chart" style="width: 100%; height: 100%;"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- GTO Strategy outputs -->
+                <div class="card">
+                    <h2 class="card-title">Solved GTO Strategy</h2>
+                    <table class="cfr-table">
+                        <thead>
+                            <tr>
+                                <th>Information Set (Player + History)</th>
+                                <th>Passive Action</th>
+                                <th>Aggressive Action</th>
+                                <th>Strategy Visualization (Passive / Aggressive)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cfr-strategy-body">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Kuhn Interactive Game Simulator -->
+            <div class="card" style="margin-top: 1.5rem;">
+                <h2 class="card-title">Interactive Game: Play Against Solved GTO</h2>
+                <p class="page-desc" style="margin-bottom: 1.25rem;">Deal a hand of Kuhn Poker and play it. The GTO player will defend optimally.</p>
+                
+                <div style="display:flex; justify-content:space-around; align-items:center; background-color:rgba(0,0,0,0.2); padding: 1.5rem; border-radius:12px; border: 1px solid var(--border-color)">
+                    <div style="display:flex; flex-direction:column; align-items:center; gap: 0.5rem">
+                        <div style="font-size:0.8rem; font-weight:700; color:var(--text-secondary)">OPPONENT (GTO)</div>
+                        <div class="card-poker" id="kuhn-opp-card" style="background-color: #27272a; border-color:#3f3f46; color:transparent">?</div>
+                        <div id="kuhn-opp-action" style="font-weight:700; font-size:0.9rem; color:var(--accent-rose)">-</div>
+                    </div>
+                    
+                    <div style="display:flex; flex-direction:column; align-items:center; gap: 0.75rem">
+                        <div class="table-pot" id="kuhn-pot">Pot: 2 Chips</div>
+                        <div id="kuhn-narrative" style="font-size:0.9rem; text-align:center; max-width:200px; color:var(--text-secondary)">Click Deal to Start</div>
+                        <button class="btn btn-primary" id="kuhn-deal-btn" style="padding: 0.5rem 1.25rem; font-size:0.9rem">Deal Hand</button>
+                    </div>
+                    
+                    <div style="display:flex; flex-direction:column; align-items:center; gap: 0.5rem">
+                        <div style="font-size:0.8rem; font-weight:700; color:var(--text-secondary)">HERO (YOU)</div>
+                        <div class="card-poker" id="kuhn-hero-card">-</div>
+                        <div id="kuhn-hero-actions" style="display:none; gap: 8px;">
+                            <button class="btn btn-fold" id="kuhn-btn-passive" style="padding: 4px 12px; font-size:0.8rem">Check</button>
+                            <button class="btn btn-raise" id="kuhn-btn-aggressive" style="padding: 4px 12px; font-size:0.8rem">Bet</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+    </main>
+
+    <!-- CORE LOGIC SCRIPTS -->
+    <script src="solver.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
